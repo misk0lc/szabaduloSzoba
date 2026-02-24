@@ -1,0 +1,249 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background: #0d0d1a;
+  color: #e2e8f0;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* ─── Header ─────────────────────────────────────── */
+.lb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  background: rgba(255,255,255,.04);
+  border-bottom: 1px solid rgba(167,139,250,.2);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.lb-logo {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.lb-icon {
+  font-size: 2rem;
+}
+
+.lb-logo h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.lb-actions {
+  display: flex;
+  gap: .75rem;
+}
+
+.btn-back {
+  padding: .5rem 1.2rem;
+  background: rgba(167,139,250,.15);
+  border: 1px solid rgba(167,139,250,.4);
+  border-radius: 8px;
+  color: #a78bfa;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: all .2s;
+}
+
+.btn-back:hover {
+  background: rgba(167,139,250,.25);
+  transform: translateX(-2px);
+}
+
+.btn-logout {
+  padding: .5rem 1.2rem;
+  background: rgba(239,68,68,.1);
+  border: 1px solid rgba(239,68,68,.3);
+  border-radius: 8px;
+  color: #f87171;
+  cursor: pointer;
+  font-size: .9rem;
+  transition: all .2s;
+}
+
+.btn-logout:hover {
+  background: rgba(239,68,68,.2);
+}
+
+/* ─── Main ────────────────────────────────────────── */
+.lb-main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ─── States ──────────────────────────────────────── */
+.loading-state,
+.error-state,
+.empty-state {
+  text-align: center;
+  padding: 5rem 2rem;
+  color: #94a3b8;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(167,139,250,.2);
+  border-top-color: #a78bfa;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-icon,
+.empty-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: .75rem;
+}
+
+.empty-sub {
+  font-size: .9rem;
+  opacity: .6;
+  margin-top: .25rem;
+}
+
+.btn-retry {
+  margin-top: 1rem;
+  padding: .5rem 1.5rem;
+  background: rgba(167,139,250,.15);
+  border: 1px solid rgba(167,139,250,.4);
+  border-radius: 8px;
+  color: #a78bfa;
+  cursor: pointer;
+  font-size: .9rem;
+}
+
+/* ─── Table ───────────────────────────────────────── */
+.lb-table-wrapper {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(167,139,250,.15);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.lb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .95rem;
+}
+
+.lb-table thead tr {
+  background: rgba(167,139,250,.1);
+}
+
+.lb-table thead th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-weight: 600;
+  color: #a78bfa;
+  letter-spacing: .04em;
+  font-size: .82rem;
+  text-transform: uppercase;
+}
+
+.lb-table tbody tr {
+  border-top: 1px solid rgba(255,255,255,.05);
+  transition: background .15s;
+}
+
+.lb-table tbody tr:hover {
+  background: rgba(167,139,250,.06);
+}
+
+.lb-table td {
+  padding: 1rem 1.25rem;
+  vertical-align: middle;
+}
+
+/* ─── Top row highlights ──────────────────────────── */
+tr.top1 {
+  background: linear-gradient(90deg, rgba(255,215,0,.07), transparent) !important;
+}
+
+tr.top2 {
+  background: linear-gradient(90deg, rgba(192,192,192,.07), transparent) !important;
+}
+
+tr.top3 {
+  background: linear-gradient(90deg, rgba(205,127,50,.07), transparent) !important;
+}
+
+tr.sajat {
+  outline: 1px solid rgba(167,139,250,.4);
+  outline-offset: -1px;
+}
+
+/* ─── Cells ───────────────────────────────────────── */
+.col-rank { width: 80px; text-align: center; }
+.col-score { text-align: right; }
+
+.medal { font-size: 1.4rem; }
+
+.rank-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  font-size: .85rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.player-name {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.you-badge {
+  display: inline-block;
+  margin-left: .5rem;
+  padding: .1rem .5rem;
+  background: rgba(167,139,250,.2);
+  border: 1px solid rgba(167,139,250,.5);
+  border-radius: 20px;
+  font-size: .72rem;
+  color: #a78bfa;
+  font-weight: 700;
+  letter-spacing: .05em;
+  vertical-align: middle;
+}
+
+.score-val {
+  font-weight: 700;
+  color: #a78bfa;
+  font-size: 1.05rem;
+}
+
+/* ─── Responsive ──────────────────────────────────── */
+@media (max-width: 600px) {
+  .lb-header {
+    flex-direction: column;
+    gap: .75rem;
+    text-align: center;
+  }
+
+  .col-hints,
+  .col-time {
+    display: none;
+  }
+}

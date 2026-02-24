@@ -1,0 +1,77 @@
+<div class="lb-wrapper">
+  <header class="lb-header">
+    <div class="lb-logo">
+      <span class="lb-icon">🏆</span>
+      <h1>Ranglista</h1>
+    </div>
+    <div class="lb-actions">
+      <button class="btn-back" (click)="visszaMegyek()">← Vissza a pályákhoz</button>
+      <button class="btn-logout" (click)="kilepes()">Kilépés</button>
+    </div>
+  </header>
+
+  <main class="lb-main">
+    @if (loading) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Ranglista betöltése...</p>
+      </div>
+    } @else if (error) {
+      <div class="error-state">
+        <span class="error-icon">⚠️</span>
+        <p>{{ error }}</p>
+        <button class="btn-retry" (click)="ngOnInit()">Újra</button>
+      </div>
+    } @else if (entries.length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">🔒</span>
+        <p>Még senki sem teljesített egyetlen pályát sem.</p>
+        <p class="empty-sub">Legyél az első!</p>
+      </div>
+    } @else {
+      <div class="lb-table-wrapper">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th class="col-rank">Helyezés</th>
+              <th class="col-name">Játékos</th>
+              <th class="col-levels">Pályák</th>
+              <th class="col-time">Idő</th>
+              <th class="col-hints">Tippek</th>
+              <th class="col-score">Pontszám</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of entries; track entry.UserID; let i = $index) {
+              <tr [class.top1]="i === 0" [class.top2]="i === 1" [class.top3]="i === 2" [class.sajat]="getSajat() === i + 1">
+                <td class="col-rank">
+                  @if (i === 0) {
+                    <span class="medal gold">🥇</span>
+                  } @else if (i === 1) {
+                    <span class="medal silver">🥈</span>
+                  } @else if (i === 2) {
+                    <span class="medal bronze">🥉</span>
+                  } @else {
+                    <span class="rank-num">{{ i + 1 }}</span>
+                  }
+                </td>
+                <td class="col-name">
+                  <span class="player-name">{{ entry.Username ?? 'Ismeretlen' }}</span>
+                  @if (getSajat() === i + 1) {
+                    <span class="you-badge">Te</span>
+                  }
+                </td>
+                <td class="col-levels">{{ entry.LevelsCompleted }}</td>
+                <td class="col-time">{{ formatIdo(entry.TimeTotal) }}</td>
+                <td class="col-hints">{{ entry.HintsUsed }}</td>
+                <td class="col-score">
+                  <span class="score-val">{{ entry.Score | number }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </main>
+</div>
