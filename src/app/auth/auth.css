@@ -1,0 +1,104 @@
+.oldal {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a2e;
+}
+
+.kártya {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+h1 {
+  color: #ffffff;
+  font-size: 24px;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.mező {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.mező label {
+  color: #a0aec0;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.mező input {
+  background: #0f3460;
+  border: 1px solid #2d3748;
+  border-radius: 8px;
+  padding: 11px 14px;
+  color: #ffffff;
+  font-size: 14px;
+  outline: none;
+}
+
+.mező input:focus {
+  border-color: #7c6cf8;
+}
+
+.hiba-szöveg {
+  color: #fc8181;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.hiba-doboz {
+  background: #3d1f1f;
+  border: 1px solid #fc8181;
+  color: #fc8181;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background: #7c6cf8;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+button:hover:not(:disabled) {
+  background: #6b5ce7;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.link {
+  text-align: center;
+  margin-top: 20px;
+  color: #718096;
+  font-size: 14px;
+}
+
+.link a {
+  color: #a78bfa;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.link a:hover {
+  text-decoration: underline;
+}

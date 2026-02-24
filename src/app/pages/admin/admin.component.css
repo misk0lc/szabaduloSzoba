@@ -1,0 +1,33 @@
+.oldal {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a2e;
+  color: #ffffff;
+  gap: 16px;
+}
+
+h1 {
+  font-size: 32px;
+}
+
+p {
+  color: #a0aec0;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px 28px;
+  background: #7c6cf8;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #6b5ce7;
+}
