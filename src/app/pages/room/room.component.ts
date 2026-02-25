@@ -2,20 +2,37 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { interval, Subscription } from 'rxjs';
+import { interval, Subscription, forkJoin } from 'rxjs';
 
 import { AuthService } from '../../services/auth.service';
 import { QuestionService } from '../../services/question.service';
 import { HintService } from '../../services/hint.service';
 import { ProgressService } from '../../services/progress.service';
+import { LevelService } from '../../services/level.service';
 
 import { Question, CheckAnswerResponse } from '../../models/question.model';
 import { Hint } from '../../models/hint.model';
+import { LevelDetail } from '../../models/level.model';
 
-interface QuestionState {
+export interface QuestionState {
   question: Question;
   solved: boolean;
   digit: number | null;
+  justSolved: boolean;   // animáció triggerhez
+}
+
+// Szoba téma pályanév alapján
+export interface RoomTheme {
+  icon: string;
+  bgClass: string;
+  objects: RoomObject[];
+}
+
+export interface RoomObject {
+  emoji: string;
+  label: string;
+  col: number;   // PositionX tartomány (1-5, 6-10, stb.)
+  row: number;   // PositionY (1-4)
 }
 
 @Component({
@@ -27,44 +44,42 @@ interface QuestionState {
 })
 export class RoomComponent implements OnInit, OnDestroy {
 
-  // ─── Állapotok ───────────────────────────────────────────────────
+  // ─── Alap állapot ──────────────────────────────────────────────
   levelId = 0;
+  level: LevelDetail | null = null;
   loading = true;
   error = '';
 
   questions: QuestionState[] = [];
   balance = 0;
 
-  // ─── Kérdés modal ────────────────────────────────────────────────
-  activeQuestion: QuestionState | null = null;
-  answerInput = '';
-  answerResult: CheckAnswerResponse | null = null;
-  answerLoading = false;
-
-  // ─── Hint panel ──────────────────────────────────────────────────
-  showHints = false;
-  hints: Hint[] = [];
-  hintsLoading = false;
-  hintError = '';
-  boughtHints: Hint[] = [];
-
-  // ─── Kód beküldés ────────────────────────────────────────────────
-  showCodeSubmit = false;
-  codeInput = '';
-  submitResult: { correct: boolean; message: string; score?: number } | null = null;
-  submitLoading = false;
-
-  // ─── Timer ───────────────────────────────────────────────────────
+  // ─── Timer ─────────────────────────────────────────────────────
   timeSpent = 0;
+  timerWarning = false;   // 10 perc felett pirosra vált
   private timerSub?: Subscription;
 
   get timerDisplay(): string {
     const m = Math.floor(this.timeSpent / 60);
     const s = this.timeSpent % 60;
-    return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
 
-  // ─── Összegyűjtött számjegyek ─────────────────────────────────────
+  // ─── Kérdés modal ──────────────────────────────────────────────
+  activeQuestion: QuestionState | null = null;
+  answerInput = '';
+  answerResult: CheckAnswerResponse | null = null;
+  answerLoading = false;
+  modalVisible = false;    // CSS animáció
+
+  // ─── Hint panel ────────────────────────────────────────────────
+  showHints = false;
+  hints: Hint[] = [];
+  hintsLoading = false;
+  hintError = '';
+
+  // ─── Digit gyűjtés ─────────────────────────────────────────────
+  newDigitIndex: number | null = null;   // villog animáció
+
   get collectedDigits(): (number | null)[] {
     return this.questions.map(q => q.digit);
   }
@@ -73,14 +88,80 @@ export class RoomComponent implements OnInit, OnDestroy {
     return this.questions.filter(q => q.solved).length;
   }
 
+  get progressPercent(): number {
+    if (!this.questions.length) return 0;
+    return Math.round((this.solvedCount / this.questions.length) * 100);
+  }
+
   get allSolved(): boolean {
     return this.questions.length > 0 && this.questions.every(q => q.solved);
+  }
+
+  // ─── Kód beküldés ──────────────────────────────────────────────
+  showCodeSubmit = false;
+  codeInput = '';
+  submitResult: { correct: boolean; message: string; score?: number } | null = null;
+  submitLoading = false;
+  submitSuccess = false;
+
+  // ─── Szoba téma ────────────────────────────────────────────────
+  get roomTheme(): { icon: string; bg: string; accent: string } {
+    const name = (this.level?.Name ?? '').toLowerCase();
+    if (name.includes('könyvtár'))  return { icon: '📚', bg: 'theme-library',   accent: '#c084fc' };
+    if (name.includes('labor'))     return { icon: '🧪', bg: 'theme-lab',       accent: '#34d399' };
+    if (name.includes('pince'))     return { icon: '🏰', bg: 'theme-dungeon',   accent: '#fb923c' };
+    if (name.includes('kapitány'))  return { icon: '⚓', bg: 'theme-ship',      accent: '#38bdf8' };
+    if (name.includes('űr'))        return { icon: '🚀', bg: 'theme-space',     accent: '#a78bfa' };
+    return { icon: '🔐', bg: 'theme-default', accent: '#a78bfa' };
+  }
+
+  // Objektum ikonok a PositionX/Y alapján (dekoráció)
+  get roomDecorations(): { emoji: string; x: number; y: number }[] {
+    const name = (this.level?.Name ?? '').toLowerCase();
+    if (name.includes('könyvtár')) return [
+      { emoji: '🗄️', x: 5, y: 10 }, { emoji: '🕯️', x: 85, y: 8 },
+      { emoji: '🦉', x: 50, y: 5 }, { emoji: '🖋️', x: 30, y: 85 },
+      { emoji: '📜', x: 70, y: 80 }
+    ];
+    if (name.includes('labor')) return [
+      { emoji: '⚗️', x: 10, y: 15 }, { emoji: '🔬', x: 75, y: 10 },
+      { emoji: '💊', x: 45, y: 75 }, { emoji: '🧫', x: 20, y: 70 },
+      { emoji: '☢️', x: 80, y: 80 }
+    ];
+    if (name.includes('pince')) return [
+      { emoji: '🕸️', x: 5, y: 5 }, { emoji: '🕸️', x: 90, y: 8 },
+      { emoji: '🪨', x: 40, y: 85 }, { emoji: '🔦', x: 65, y: 20 },
+      { emoji: '🐀', x: 80, y: 80 }
+    ];
+    if (name.includes('kapitány')) return [
+      { emoji: '🗺️', x: 10, y: 10 }, { emoji: '⚓', x: 85, y: 15 },
+      { emoji: '🦜', x: 50, y: 8 }, { emoji: '🧭', x: 25, y: 80 },
+      { emoji: '💎', x: 75, y: 75 }
+    ];
+    if (name.includes('űr')) return [
+      { emoji: '🌌', x: 5, y: 5 }, { emoji: '🛸', x: 80, y: 10 },
+      { emoji: '⭐', x: 45, y: 8 }, { emoji: '🌙', x: 20, y: 78 },
+      { emoji: '🤖', x: 78, y: 80 }
+    ];
+    return [];
+  }
+
+  // Kérdés-pont pozíció: PositionX (1-20) → %, PositionY (1-4) → %
+  nodeLeft(q: Question): number {
+    // 1-20 → 5%-93% (margókkal)
+    return 5 + ((q.PositionX - 1) / 19) * 88;
+  }
+
+  nodeTop(q: Question): number {
+    // 1-4 → 15%-78% (header és digit-bar helye miatt)
+    return 15 + ((q.PositionY - 1) / 3) * 63;
   }
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private auth: AuthService,
+    private levelSvc: LevelService,
     private questionSvc: QuestionService,
     private hintSvc: HintService,
     private progressSvc: ProgressService
@@ -88,8 +169,7 @@ export class RoomComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.levelId = Number(this.route.snapshot.paramMap.get('id'));
-    this.loadQuestions();
-    this.startTimer();
+    this.loadRoom();
   }
 
   ngOnDestroy(): void {
@@ -97,24 +177,39 @@ export class RoomComponent implements OnInit, OnDestroy {
   }
 
   private startTimer(): void {
-    this.timerSub = interval(1000).subscribe(() => this.timeSpent++);
+    this.timerSub = interval(1000).subscribe(() => {
+      this.timeSpent++;
+      this.timerWarning = this.timeSpent > 600; // 10 perc után figyelmeztetés
+    });
   }
 
-  loadQuestions(): void {
+  loadRoom(): void {
     this.loading = true;
-    this.questionSvc.getQuestions(this.levelId).subscribe({
-      next: (data) => {
-        this.questions = data.map(q => ({ question: q, solved: false, digit: null }));
+    forkJoin({
+      level: this.levelSvc.getLevel(this.levelId),
+      questions: this.questionSvc.getQuestions(this.levelId)
+    }).subscribe({
+      next: ({ level, questions }) => {
+        this.level = level;
+        this.questions = questions.map(q => ({
+          question: q,
+          solved: false,
+          digit: null,
+          justSolved: false
+        }));
         this.loading = false;
+        this.startTimer();
       },
-      error: () => {
-        this.error = 'Nem sikerült betölteni a szoba kérdéseit.';
+      error: (err) => {
+        this.error = err.status === 403
+          ? 'Ez a pálya még nem érhető el.'
+          : 'Nem sikerült betölteni a szobát.';
         this.loading = false;
       }
     });
   }
 
-  // ─── Kérdés megnyitása ────────────────────────────────────────────
+  // ─── Kérdés modal ──────────────────────────────────────────────
   openQuestion(qs: QuestionState): void {
     if (qs.solved) return;
     this.activeQuestion = qs;
@@ -122,16 +217,19 @@ export class RoomComponent implements OnInit, OnDestroy {
     this.answerResult = null;
     this.showHints = false;
     this.hints = [];
-    this.boughtHints = [];
     this.hintError = '';
+    // Animáció delay
+    setTimeout(() => this.modalVisible = true, 10);
   }
 
   closeQuestion(): void {
-    this.activeQuestion = null;
-    this.answerResult = null;
+    this.modalVisible = false;
+    setTimeout(() => {
+      this.activeQuestion = null;
+      this.answerResult = null;
+    }, 250);
   }
 
-  // ─── Válasz ellenőrzése ───────────────────────────────────────────
   checkAnswer(): void {
     if (!this.activeQuestion || !this.answerInput.trim()) return;
     this.answerLoading = true;
@@ -143,14 +241,21 @@ export class RoomComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.answerResult = res;
         this.answerLoading = false;
+
         if (res.correct && this.activeQuestion) {
           this.activeQuestion.solved = true;
+          this.activeQuestion.justSolved = true;
+
+          const idx = this.questions.findIndex(
+            q => q.question.QuestionID === this.activeQuestion!.question.QuestionID
+          );
           if (res.RewardDigit !== undefined) {
             this.activeQuestion.digit = res.RewardDigit;
+            this.newDigitIndex = idx;
+            setTimeout(() => this.newDigitIndex = null, 1500);
           }
-          if (res.NewBalance !== undefined) {
-            this.balance = res.NewBalance;
-          }
+          if (res.NewBalance !== undefined) this.balance = res.NewBalance;
+
           setTimeout(() => this.closeQuestion(), 1800);
         }
       },
@@ -161,41 +266,27 @@ export class RoomComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Hint kezelés ────────────────────────────────────────────────
+  // ─── Hint ──────────────────────────────────────────────────────
   toggleHints(): void {
     this.showHints = !this.showHints;
     if (this.showHints && this.hints.length === 0 && this.activeQuestion) {
-      this.loadHints(this.activeQuestion.question.QuestionID);
+      this.hintsLoading = true;
+      this.hintSvc.getHints(this.activeQuestion.question.QuestionID).subscribe({
+        next: (data) => { this.hints = data; this.hintsLoading = false; },
+        error: () => { this.hintError = 'Nem sikerült betölteni a tippeket.'; this.hintsLoading = false; }
+      });
     }
   }
 
-  loadHints(questionId: number): void {
-    this.hintsLoading = true;
-    this.hintSvc.getHints(questionId).subscribe({
-      next: (data) => {
-        this.hints = data;
-        this.hintsLoading = false;
-      },
-      error: () => {
-        this.hintError = 'Nem sikerült betölteni a tippeket.';
-        this.hintsLoading = false;
-      }
-    });
-  }
-
   buyHint(hint: Hint): void {
+    this.hintError = '';
     this.hintSvc.buyHint(hint.HintID).subscribe({
       next: (res) => {
         this.balance = res.NewBalance;
-        const bought: Hint = { ...hint, HintText: res.HintText };
-        this.boughtHints.push(bought);
-        // frissítjük az listában is
         const idx = this.hints.findIndex(h => h.HintID === hint.HintID);
-        if (idx !== -1) this.hints[idx] = bought;
+        if (idx !== -1) this.hints[idx] = { ...hint, HintText: res.HintText };
       },
-      error: () => {
-        this.hintError = 'Nincs elegendő egyenleged vagy már megvetted ezt a tippet.';
-      }
+      error: () => { this.hintError = 'Nincs elegendő egyenleged, vagy már megvetted.'; }
     });
   }
 
@@ -203,14 +294,16 @@ export class RoomComponent implements OnInit, OnDestroy {
     return hint.HintText !== undefined && hint.HintText !== null;
   }
 
-  // ─── Kód beküldés ────────────────────────────────────────────────
+  // ─── Kód beküldés ──────────────────────────────────────────────
   openCodeSubmit(): void {
     this.showCodeSubmit = true;
-    this.codeInput = this.collectedDigits.map(d => d ?? '_').join('');
+    this.codeInput = this.collectedDigits.map(d => d ?? '').join('');
     this.submitResult = null;
+    this.submitSuccess = false;
   }
 
   closeCodeSubmit(): void {
+    if (this.submitSuccess) return;
     this.showCodeSubmit = false;
   }
 
@@ -225,14 +318,11 @@ export class RoomComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (res) => {
         this.submitLoading = false;
-        this.submitResult = {
-          correct: res.correct,
-          message: res.message,
-          score: res.Score
-        };
+        this.submitResult = { correct: res.correct, message: res.message, score: res.Score };
         if (res.correct) {
+          this.submitSuccess = true;
           this.timerSub?.unsubscribe();
-          setTimeout(() => this.router.navigate(['/game']), 3000);
+          setTimeout(() => this.router.navigate(['/game']), 3500);
         }
       },
       error: () => {
@@ -242,7 +332,7 @@ export class RoomComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ─── Navigáció ───────────────────────────────────────────────────
+  // ─── Navigáció ─────────────────────────────────────────────────
   visszaMegyek(): void {
     this.router.navigate(['/game']);
   }

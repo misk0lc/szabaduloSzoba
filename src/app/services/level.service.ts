@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Level } from '../models/level.model';
+import { Level, LevelDetail } from '../models/level.model';
 
 @Injectable({ providedIn: 'root' })
 export class LevelService {
@@ -12,5 +12,9 @@ export class LevelService {
 
   getLevels(): Observable<Level[]> {
     return this.http.get<Level[]>(`${this.api}/levels`);
+  }
+
+  getLevel(id: number): Observable<LevelDetail> {
+    return this.http.get<LevelDetail>(`${this.api}/levels/${id}`);
   }
 }
