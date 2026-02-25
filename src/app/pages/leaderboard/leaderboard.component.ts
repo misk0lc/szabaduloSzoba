@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
 import { LeaderboardEntry } from '../../models/leaderboard.model';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-leaderboard',
@@ -16,7 +17,7 @@ export class LeaderboardComponent implements OnInit {
   entries: LeaderboardEntry[] = [];
   loading = true;
   error = '';
-  private api = 'http://localhost:8001/api';
+  private api = environment.apiUrl;
 
   constructor(
     private http: HttpClient,

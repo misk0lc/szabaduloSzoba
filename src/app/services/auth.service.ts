@@ -4,11 +4,12 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { User, AuthResponse, LoginRequest, RegisterRequest } from '../models/user.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  private api = 'http://localhost:8001/api';
+  private api = environment.apiUrl;
 
   constructor(private http: HttpClient, private router: Router) {}
 
